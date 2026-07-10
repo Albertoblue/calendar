@@ -1,5 +1,7 @@
 import express from 'express';
 import http from 'http';
+import path from 'path';
+import fs from 'fs';
 import cors from 'cors';
 import { env } from './config/env';
 import { connectDB } from './config/db';
@@ -33,6 +35,20 @@ app.use('/api/countdowns', countdownRoutes);
 app.use('/api/suggest', suggestRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/gifts', giftRoutes);
+
+// En produccion el mismo servidor sirve el frontend buildeado (client/dist),
+// asi todo vive en un unico dominio (sin CORS ni proxy). Si no existe el build
+// (modo dev), este bloque se omite y el cliente corre en Vite (5173).
+const clientDist = path.join(__dirname, '../../client/dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  // Fallback SPA: cualquier ruta que no sea /api devuelve index.html
+  // para que react-router maneje el enrutado en el cliente.
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
 
 app.use(errorHandler);
 

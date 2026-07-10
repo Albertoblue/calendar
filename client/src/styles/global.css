@@ -1,0 +1,97 @@
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  font-family: 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont,
+    Roboto, 'Helvetica Neue', sans-serif;
+  background-color: #faf9f8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ---- Ajustes para que react-big-calendar se parezca a Outlook ---- */
+
+.rbc-calendar {
+  font-size: 13px;
+}
+
+.rbc-header {
+  padding: 8px 4px;
+  font-weight: 600;
+  color: #323130;
+  border-bottom: 1px solid #edebe9;
+  text-transform: capitalize;
+}
+
+.rbc-time-view,
+.rbc-month-view {
+  border: 1px solid #edebe9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.rbc-time-header-content,
+.rbc-time-content,
+.rbc-day-bg + .rbc-day-bg,
+.rbc-month-row + .rbc-month-row,
+.rbc-time-content > * + * > * {
+  border-color: #edebe9;
+}
+
+.rbc-timeslot-group {
+  border-bottom: 1px solid #f3f2f1;
+  min-height: 44px;
+}
+
+.rbc-time-gutter,
+.rbc-timeslot-group {
+  color: #605e5c;
+}
+
+.rbc-today {
+  background-color: #eff6fc;
+}
+
+/* Bloques de actividad */
+.rbc-event {
+  border: none;
+  padding: 2px 6px;
+  font-size: 12px;
+  box-shadow: none;
+}
+.rbc-event:focus {
+  outline: 2px solid #0f6cbd;
+}
+.rbc-event.rbc-selected {
+  filter: brightness(0.92);
+}
+
+/* Indicador de hora actual */
+.rbc-current-time-indicator {
+  background-color: #d13438;
+  height: 2px;
+}
+
+/* Dias fuera del mes en vista mensual */
+.rbc-off-range-bg {
+  background-color: #faf9f8;
+}
+
+.rbc-month-view .rbc-date-cell {
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+/* Vista agenda */
+.rbc-agenda-view table.rbc-agenda-table {
+  border: 1px solid #edebe9;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+  border-bottom: 1px solid #edebe9;
+}

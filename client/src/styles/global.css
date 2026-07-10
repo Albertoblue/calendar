@@ -95,3 +95,45 @@ body,
 .rbc-agenda-view table.rbc-agenda-table thead > tr > th {
   border-bottom: 1px solid #edebe9;
 }
+
+/* ---- Responsive / movil ---- */
+@media (max-width: 768px) {
+  /* Nada debe forzar scroll horizontal de toda la pagina */
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Calendario mas compacto y legible en pantallas pequenas */
+  .rbc-calendar {
+    font-size: 12px;
+  }
+  .rbc-header {
+    padding: 6px 2px;
+    font-size: 12px;
+  }
+  .rbc-event {
+    font-size: 11px;
+    padding: 1px 4px;
+  }
+  .rbc-month-view .rbc-date-cell {
+    padding: 2px 4px;
+    font-size: 11px;
+  }
+  .rbc-time-gutter,
+  .rbc-timeslot-group {
+    font-size: 11px;
+  }
+  .rbc-timeslot-group {
+    min-height: 40px;
+  }
+
+  /* Los dialogos de Fluent ocupan casi toda la pantalla y hacen scroll interno */
+  .fui-DialogSurface {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    max-height: 92vh !important;
+    overflow-y: auto !important;
+    padding: 16px !important;
+  }
+}

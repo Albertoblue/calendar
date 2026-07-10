@@ -7,6 +7,7 @@ import {
   MenuPopover,
   MenuList,
   MenuItem,
+  MenuDivider,
   Tooltip,
   makeStyles,
   tokens,
@@ -20,7 +21,8 @@ import {
   Settings20Regular,
   QuestionCircle20Regular,
   SignOut20Regular,
-  GridDots20Regular,
+  Navigation20Regular,
+  MoreHorizontal20Regular,
   CalendarLtr20Regular,
   Star20Regular,
   Star20Filled,
@@ -40,6 +42,7 @@ import {
 import { es } from 'date-fns/locale';
 import { Activity } from '../../types';
 import { NotificationsBell } from '../reminders/NotificationsBell';
+import { useIsMobile } from '../../lib/useIsMobile';
 
 const OUTLOOK_BLUE = '#0F6CBD';
 
@@ -53,11 +56,27 @@ const useStyles = makeStyles({
     gap: '12px',
     padding: '0 12px',
     color: '#fff',
+    '@media (max-width: 768px)': { gap: '6px', padding: '0 6px' },
   },
-  brand: { display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '16px' },
-  search: { flexGrow: 1, maxWidth: '480px' },
+  brand: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontWeight: 600,
+    fontSize: '16px',
+    whiteSpace: 'nowrap',
+    '@media (max-width: 768px)': { fontSize: '14px' },
+  },
+  brandText: { '@media (max-width: 480px)': { display: 'none' } },
+  search: {
+    flexGrow: 1,
+    maxWidth: '480px',
+    '@media (max-width: 768px)': { display: 'none' },
+  },
   spacer: { flexGrow: 1 },
   iconBtn: { color: '#fff', minWidth: '32px' },
+  hideMobile: { '@media (max-width: 768px)': { display: 'none' } },
+  menuBtn: { color: '#fff', minWidth: '32px', display: 'none', '@media (max-width: 768px)': { display: 'inline-flex' } },
   commandbar: {
     height: '48px',
     backgroundColor: tokens.colorNeutralBackground1,
@@ -66,6 +85,8 @@ const useStyles = makeStyles({
     alignItems: 'center',
     gap: '8px',
     padding: '0 12px',
+    overflowX: 'auto',
+    '@media (max-width: 768px)': { gap: '4px', padding: '0 6px' },
   },
   dateLabel: {
     fontSize: '18px',
@@ -73,6 +94,7 @@ const useStyles = makeStyles({
     textTransform: 'capitalize',
     marginLeft: '4px',
     whiteSpace: 'nowrap',
+    '@media (max-width: 768px)': { fontSize: '13px', marginLeft: '2px' },
   },
 });
 
@@ -101,6 +123,7 @@ interface Props {
   onOpenSuggest: () => void;
   onOpenHistory: () => void;
   onOpenGifts: () => void;
+  onToggleSidebar: () => void;
   onLogout: () => void;
 }
 
@@ -132,17 +155,43 @@ export function TopBar({
   onOpenSuggest,
   onOpenHistory,
   onOpenGifts,
+  onToggleSidebar,
   onLogout,
 }: Props) {
   const styles = useStyles();
+  const isMobile = useIsMobile();
+
+  const viewMenu = (
+    <Menu>
+      <MenuTrigger disableButtonEnhancement>
+        <Button appearance="subtle" iconPosition="after" icon={<ChevronDown16Regular />}>
+          {VIEW_LABELS[view] ?? 'Vista'}
+        </Button>
+      </MenuTrigger>
+      <MenuPopover>
+        <MenuList>
+          <MenuItem onClick={() => onViewChange('day')}>Dia</MenuItem>
+          <MenuItem onClick={() => onViewChange('week')}>Semana</MenuItem>
+          <MenuItem onClick={() => onViewChange('month')}>Mes</MenuItem>
+          <MenuItem onClick={() => onViewChange('agenda')}>Agenda</MenuItem>
+        </MenuList>
+      </MenuPopover>
+    </Menu>
+  );
 
   return (
     <div className={styles.root}>
       <div className={styles.topbar}>
-        <Button appearance="transparent" className={styles.iconBtn} icon={<GridDots20Regular />} />
+        <Button
+          appearance="transparent"
+          className={styles.menuBtn}
+          icon={<Navigation20Regular />}
+          onClick={onToggleSidebar}
+          aria-label="Abrir menu lateral"
+        />
         <div className={styles.brand}>
           <CalendarLtr20Regular />
-          Nuestro Calendario
+          <span className={styles.brandText}>Nuestro Calendario</span>
         </div>
         <div className={styles.search}>
           <Input
@@ -154,14 +203,22 @@ export function TopBar({
         </div>
         <div className={styles.spacer} />
         <NotificationsBell activities={upcomingActivities} />
-        <Button appearance="transparent" className={styles.iconBtn} icon={<Settings20Regular />} />
-        <Button appearance="transparent" className={styles.iconBtn} icon={<QuestionCircle20Regular />} />
+        <Button
+          appearance="transparent"
+          className={`${styles.iconBtn} ${styles.hideMobile}`}
+          icon={<Settings20Regular />}
+        />
+        <Button
+          appearance="transparent"
+          className={`${styles.iconBtn} ${styles.hideMobile}`}
+          icon={<QuestionCircle20Regular />}
+        />
         <Avatar name={userName} color="colorful" size={32} />
       </div>
 
       <div className={styles.commandbar}>
         <Button appearance="primary" icon={<Add16Filled />} onClick={onNewActivity}>
-          Nueva actividad
+          {isMobile ? null : 'Nueva actividad'}
         </Button>
         <Button appearance="subtle" onClick={onToday}>
           Hoy
@@ -176,57 +233,88 @@ export function TopBar({
 
         <div className={styles.spacer} />
 
-        <Button
-          appearance={wishlistOpen ? 'primary' : 'subtle'}
-          icon={wishlistOpen ? <Star20Filled /> : <Star20Regular />}
-          onClick={onToggleWishlist}
-        >
-          Lista de deseos
-        </Button>
-
-        <Button appearance="subtle" icon={<Heart20Regular />} onClick={onOpenMemories}>
-          Recuerdos
-        </Button>
-
-        <Button appearance="subtle" icon={<Lightbulb20Regular />} onClick={onOpenIdeas}>
-          Ideas
-        </Button>
-
-        <Button appearance="subtle" icon={<CalendarClock20Regular />} onClick={onOpenCountdowns}>
-          Fechas
-        </Button>
-
-        <Button appearance="subtle" icon={<Sparkle20Regular />} onClick={onOpenSuggest}>
-          Sugerir
-        </Button>
-
-        <Button appearance="subtle" icon={<History20Regular />} onClick={onOpenHistory}>
-          Historia
-        </Button>
-
-        <Button appearance="subtle" icon={<Gift20Regular />} onClick={onOpenGifts}>
-          Regalos
-        </Button>
-
-        <Menu>
-          <MenuTrigger disableButtonEnhancement>
-            <Button appearance="subtle" iconPosition="after" icon={<ChevronDown16Regular />}>
-              {VIEW_LABELS[view] ?? 'Vista'}
+        {isMobile ? (
+          <>
+            {viewMenu}
+            <Menu>
+              <MenuTrigger disableButtonEnhancement>
+                <Button appearance="subtle" icon={<MoreHorizontal20Regular />} aria-label="Mas opciones" />
+              </MenuTrigger>
+              <MenuPopover>
+                <MenuList>
+                  <MenuItem
+                    icon={wishlistOpen ? <Star20Filled /> : <Star20Regular />}
+                    onClick={onToggleWishlist}
+                  >
+                    Lista de deseos
+                  </MenuItem>
+                  <MenuItem icon={<Heart20Regular />} onClick={onOpenMemories}>
+                    Recuerdos
+                  </MenuItem>
+                  <MenuItem icon={<Lightbulb20Regular />} onClick={onOpenIdeas}>
+                    Ideas
+                  </MenuItem>
+                  <MenuItem icon={<CalendarClock20Regular />} onClick={onOpenCountdowns}>
+                    Fechas
+                  </MenuItem>
+                  <MenuItem icon={<Sparkle20Regular />} onClick={onOpenSuggest}>
+                    Sugerir
+                  </MenuItem>
+                  <MenuItem icon={<History20Regular />} onClick={onOpenHistory}>
+                    Historia
+                  </MenuItem>
+                  <MenuItem icon={<Gift20Regular />} onClick={onOpenGifts}>
+                    Regalos
+                  </MenuItem>
+                  <MenuDivider />
+                  <MenuItem icon={<SignOut20Regular />} onClick={onLogout}>
+                    Cerrar sesion
+                  </MenuItem>
+                </MenuList>
+              </MenuPopover>
+            </Menu>
+          </>
+        ) : (
+          <>
+            <Button
+              appearance={wishlistOpen ? 'primary' : 'subtle'}
+              icon={wishlistOpen ? <Star20Filled /> : <Star20Regular />}
+              onClick={onToggleWishlist}
+            >
+              Lista de deseos
             </Button>
-          </MenuTrigger>
-          <MenuPopover>
-            <MenuList>
-              <MenuItem onClick={() => onViewChange('day')}>Dia</MenuItem>
-              <MenuItem onClick={() => onViewChange('week')}>Semana</MenuItem>
-              <MenuItem onClick={() => onViewChange('month')}>Mes</MenuItem>
-              <MenuItem onClick={() => onViewChange('agenda')}>Agenda</MenuItem>
-            </MenuList>
-          </MenuPopover>
-        </Menu>
 
-        <Tooltip content="Cerrar sesion" relationship="label">
-          <Button appearance="subtle" icon={<SignOut20Regular />} onClick={onLogout} />
-        </Tooltip>
+            <Button appearance="subtle" icon={<Heart20Regular />} onClick={onOpenMemories}>
+              Recuerdos
+            </Button>
+
+            <Button appearance="subtle" icon={<Lightbulb20Regular />} onClick={onOpenIdeas}>
+              Ideas
+            </Button>
+
+            <Button appearance="subtle" icon={<CalendarClock20Regular />} onClick={onOpenCountdowns}>
+              Fechas
+            </Button>
+
+            <Button appearance="subtle" icon={<Sparkle20Regular />} onClick={onOpenSuggest}>
+              Sugerir
+            </Button>
+
+            <Button appearance="subtle" icon={<History20Regular />} onClick={onOpenHistory}>
+              Historia
+            </Button>
+
+            <Button appearance="subtle" icon={<Gift20Regular />} onClick={onOpenGifts}>
+              Regalos
+            </Button>
+
+            {viewMenu}
+
+            <Tooltip content="Cerrar sesion" relationship="label">
+              <Button appearance="subtle" icon={<SignOut20Regular />} onClick={onLogout} />
+            </Tooltip>
+          </>
+        )}
       </div>
     </div>
   );

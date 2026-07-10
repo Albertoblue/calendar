@@ -15,6 +15,7 @@ import { daysUntil, countdownLabel } from '../../lib/countdown';
 const useStyles = makeStyles({
   root: {
     width: '260px',
+    maxWidth: '85vw',
     flexShrink: 0,
     borderRight: `1px solid ${tokens.colorNeutralStroke2}`,
     padding: '12px',

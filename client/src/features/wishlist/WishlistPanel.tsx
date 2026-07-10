@@ -23,6 +23,7 @@ import { Category, WishlistItem, WishPriority } from '../../types';
 const useStyles = makeStyles({
   root: {
     width: '320px',
+    maxWidth: '90vw',
     flexShrink: 0,
     borderLeft: `1px solid ${tokens.colorNeutralStroke2}`,
     backgroundColor: tokens.colorNeutralBackground1,

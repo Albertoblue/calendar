@@ -39,6 +39,7 @@ import {
   deleteCountdown,
 } from '../../api/countdowns';
 import { monthRange } from '../../lib/dateRange';
+import { useIsMobile } from '../../lib/useIsMobile';
 import { sortByProximity } from '../../lib/countdown';
 import {
   Activity,
@@ -79,8 +80,33 @@ const useStyles = makeStyles({
     padding: '12px',
     overflow: 'hidden',
     backgroundColor: tokens.colorNeutralBackground2,
+    '@media (max-width: 768px)': { padding: '6px' },
   },
   center: { display: 'grid', placeItems: 'center', height: '100vh', gap: '12px' },
+  backdrop: {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    zIndex: 1000,
+  },
+  drawerLeft: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    zIndex: 1001,
+    display: 'flex',
+    boxShadow: tokens.shadow28,
+  },
+  drawerRight: {
+    position: 'fixed',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1001,
+    display: 'flex',
+    boxShadow: tokens.shadow28,
+  },
 });
 
 function shift(date: Date, view: View, dir: 1 | -1): Date {
@@ -114,9 +140,13 @@ export function CalendarPage() {
   const { user, logout } = useAuth();
   const qc = useQueryClient();
   useRealtime(true);
+  const isMobile = useIsMobile();
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<View>('week');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [view, setView] = useState<View>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches ? 'day' : 'week'
+  );
   const [activeMembers, setActiveMembers] = useState<Set<string>>(new Set());
   const [activeCategories, setActiveCategories] = useState<Set<string>>(new Set());
   const [dialog, setDialog] = useState<DialogState>(CLOSED_DIALOG);
@@ -538,6 +568,40 @@ export function CalendarPage() {
       : members.find((m) => m._id === detail.createdBy)?.name ?? 'tu pareja'
     : '';
 
+  // Props comunes del Sidebar y la Wishlist (se reutilizan en desktop e en el drawer movil).
+  const sidebarProps = {
+    currentDate,
+    spaceName: space.name,
+    inviteCode: space.inviteCode,
+    currentUserId: user?.id ?? '',
+    members,
+    categories,
+    activeMembers,
+    activeCategories,
+    onToggleMember: (id: string) => toggle(setActiveMembers, id),
+    onToggleCategory: (id: string) => toggle(setActiveCategories, id),
+    nextCountdown,
+    onOpenCountdowns: () => setShowCountdowns(true),
+  };
+
+  const wishlistProps = {
+    items: wishlistQuery.data ?? [],
+    categories,
+    loading: wishlistQuery.isLoading,
+    onClose: () => setShowWishlist(false),
+    onAdd: () => setWishDialog({ open: true, wish: null }),
+    onEdit: (w: WishlistItem) => setWishDialog({ open: true, wish: w }),
+    onDelete: (id: string) => deleteWishMut.mutate(id),
+    onSchedule: openScheduleFromWish,
+    onToggleDone: toggleWishDone,
+    onDragStart: (w: WishlistItem) => {
+      draggedWish.current = w;
+    },
+    onDragEnd: () => {
+      draggedWish.current = null;
+    },
+  };
+
   return (
     <div className={styles.shell}>
       <TopBar
@@ -558,25 +622,12 @@ export function CalendarPage() {
         onOpenSuggest={() => setShowSuggest(true)}
         onOpenHistory={() => setShowHistory(true)}
         onOpenGifts={() => setShowGifts(true)}
+        onToggleSidebar={() => setSidebarOpen((v) => !v)}
         onLogout={logout}
       />
 
       <div className={styles.body}>
-        <Sidebar
-          currentDate={currentDate}
-          onDateChange={setCurrentDate}
-          spaceName={space.name}
-          inviteCode={space.inviteCode}
-          currentUserId={user?.id ?? ''}
-          members={members}
-          categories={categories}
-          activeMembers={activeMembers}
-          activeCategories={activeCategories}
-          onToggleMember={(id) => toggle(setActiveMembers, id)}
-          onToggleCategory={(id) => toggle(setActiveCategories, id)}
-          nextCountdown={nextCountdown}
-          onOpenCountdowns={() => setShowCountdowns(true)}
-        />
+        {!isMobile && <Sidebar {...sidebarProps} onDateChange={setCurrentDate} />}
 
         <main className={styles.canvas}>
           <CalendarCanvas
@@ -592,20 +643,32 @@ export function CalendarPage() {
           />
         </main>
 
-        {showWishlist && (
-          <WishlistPanel
-            items={wishlistQuery.data ?? []}
-            categories={categories}
-            loading={wishlistQuery.isLoading}
-            onClose={() => setShowWishlist(false)}
-            onAdd={() => setWishDialog({ open: true, wish: null })}
-            onEdit={(w) => setWishDialog({ open: true, wish: w })}
-            onDelete={(id) => deleteWishMut.mutate(id)}
-            onSchedule={openScheduleFromWish}
-            onToggleDone={toggleWishDone}
-            onDragStart={(w) => { draggedWish.current = w; }}
-            onDragEnd={() => { draggedWish.current = null; }}
-          />
+        {showWishlist && !isMobile && <WishlistPanel {...wishlistProps} />}
+
+        {/* Movil: Sidebar como panel deslizable con fondo oscuro */}
+        {isMobile && sidebarOpen && (
+          <>
+            <div className={styles.backdrop} onClick={() => setSidebarOpen(false)} />
+            <div className={styles.drawerLeft}>
+              <Sidebar
+                {...sidebarProps}
+                onDateChange={(d) => {
+                  setCurrentDate(d);
+                  setSidebarOpen(false);
+                }}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Movil: Lista de deseos como panel deslizable */}
+        {isMobile && showWishlist && (
+          <>
+            <div className={styles.backdrop} onClick={() => setShowWishlist(false)} />
+            <div className={styles.drawerRight}>
+              <WishlistPanel {...wishlistProps} />
+            </div>
+          </>
         )}
       </div>
 

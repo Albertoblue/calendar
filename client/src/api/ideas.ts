@@ -39,3 +39,15 @@ export async function searchPlaces(q: string): Promise<SearchResponse> {
   const { data } = await api.get<SearchResponse>('/ideas/search/places', { params: { q } });
   return data;
 }
+
+export async function topRatedWatch(): Promise<SearchResponse> {
+  const { data } = await api.get<SearchResponse>('/ideas/discover/movies');
+  return data;
+}
+
+export async function discoverPlaces(lat: number, lng: number): Promise<SearchResponse> {
+  const { data } = await api.get<SearchResponse>('/ideas/discover/places', {
+    params: { lat, lng },
+  });
+  return data;
+}

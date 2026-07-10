@@ -4,8 +4,15 @@ import { Types, FilterQuery } from 'mongoose';
 import { Idea, IIdea } from '../models/Idea';
 import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
-import { searchMovies, searchPlaces, NotConfigured } from '../lib/providers';
+import {
+  searchMovies,
+  searchPlaces,
+  topRatedWatch,
+  discoverPlaces,
+  NotConfigured,
+} from '../lib/providers';
 import { emitChange } from '../lib/realtime';
+import { env } from '../config/env';
 
 async function getSpaceId(userId?: string): Promise<Types.ObjectId | null> {
   const user = await User.findById(userId).select('spaceId');
@@ -18,7 +25,7 @@ export const listIdeas = async (req: AuthRequest, res: Response) => {
   const filter: FilterQuery<IIdea> = { spaceId };
   const kind = req.query.kind;
   if (kind === 'place' || kind === 'watch') filter.kind = kind;
-  const ideas = await Idea.find(filter).sort({ done: 1, createdAt: -1 });
+  const ideas = await Idea.find(filter).sort({ favorite: -1, done: 1, createdAt: -1 });
   return res.json({ ideas });
 };
 
@@ -33,6 +40,7 @@ const ideaSchema = z.object({
   extra: z.record(z.unknown()).optional(),
   notes: z.string().optional(),
   done: z.boolean().optional(),
+  favorite: z.boolean().optional(),
   progress: z
     .object({ season: z.number().int().min(0), episode: z.number().int().min(0) })
     .optional(),
@@ -98,6 +106,33 @@ export const searchMoviesCtrl = async (req: AuthRequest, res: Response) => {
   const { q } = searchQuery.parse(req.query);
   try {
     const results = await searchMovies(q);
+    return res.json({ results, configured: true });
+  } catch (err) {
+    if (err instanceof NotConfigured) return res.json({ results: [], configured: false });
+    throw err;
+  }
+};
+
+// Mejor valoradas (pelis/series) para mostrar de inicio sin buscar.
+export const topRatedCtrl = async (_req: AuthRequest, res: Response) => {
+  try {
+    const results = await topRatedWatch();
+    return res.json({ results, configured: true });
+  } catch (err) {
+    if (err instanceof NotConfigured) return res.json({ results: [], configured: false });
+    throw err;
+  }
+};
+
+// Imprescindibles cerca de una ubicacion (lat/lng del navegador).
+export const discoverPlacesCtrl = async (req: AuthRequest, res: Response) => {
+  const lat = Number(req.query.lat);
+  const lng = Number(req.query.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return res.json({ results: [], configured: Boolean(env.googlePlacesKey), needsLocation: true });
+  }
+  try {
+    const results = await discoverPlaces(lat, lng);
     return res.json({ results, configured: true });
   } catch (err) {
     if (err instanceof NotConfigured) return res.json({ results: [], configured: false });

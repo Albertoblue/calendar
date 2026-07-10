@@ -96,6 +96,8 @@ También puedes arrancarlos por separado con `npm run dev:server` y `npm run dev
 | DELETE | `/api/ideas/:id` | Eliminar idea |
 | GET | `/api/ideas/search/movies?q=` | Buscar pelis/series en TMDB (proxy) |
 | GET | `/api/ideas/search/places?q=` | Buscar lugares en Google Places (proxy) |
+| GET | `/api/ideas/discover/movies` | Pelis/series **mejor valoradas** (TMDB, para mostrar de inicio) |
+| GET | `/api/ideas/discover/places?lat=&lng=` | Lugares **imprescindibles** cerca de una ubicación (Places Nearby) |
 | POST | `/api/ideas/:id/rate` | Valorar una serie/peli (una valoración por persona) |
 | GET | `/api/stats` | Estadísticas de la relación |
 | GET | `/api/gifts` | Listar regalos (oculta las reservas de los tuyos) |
@@ -177,12 +179,15 @@ semana o cada mes, con una fecha **"Repetir hasta"** opcional. Ejemplo: noche de
 
 Apartado **💡 Ideas** (barra superior) con dos pestañas:
 
-- **Lugares:** busca restaurantes, museos, etc. con **Google Places (New)** (foto,
-  dirección, rating) y guárdalos.
-- **Pelis / Series:** busca con **TMDB** (póster, sinopsis, año, rating).
+- **Lugares:** al entrar muestra los **imprescindibles cerca de ti** (con permiso de
+  ubicación del navegador → Places *Nearby* por popularidad); también buscas por nombre con
+  **Google Places (New)** (foto, dirección, rating). Marca cualquiera como **favorito** (❤️).
+- **Pelis / Series:** al entrar muestra las **mejor valoradas** (TMDB) de inicio, sin
+  buscar; y puedes buscar cualquier título con póster, sinopsis, año y rating.
 
-De cada ítem guardado puedes: **agendarlo** al calendario, marcarlo **visitado/visto**,
-abrir su enlace o eliminarlo.
+De cada ítem guardado puedes: marcarlo **favorito** (❤️, se ordena primero),
+**agendarlo** al calendario, marcarlo **visitado/visto**, abrir su enlace o eliminarlo.
+Desde los resultados/recomendaciones, el corazón lo añade directo a favoritos.
 
 ### Configurar las APIs (opcional)
 

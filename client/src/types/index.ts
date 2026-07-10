@@ -142,6 +142,7 @@ export interface Idea {
   extra?: Record<string, unknown>;
   notes?: string;
   done: boolean;
+  favorite?: boolean;
   progress?: { season: number; episode: number };
   ratings?: { userId: string; value: number }[];
   createdAt?: string;
@@ -170,6 +171,7 @@ export interface IdeaInput {
   extra?: Record<string, unknown>;
   notes?: string;
   done?: boolean;
+  favorite?: boolean;
   progress?: { season: number; episode: number };
 }
 

@@ -21,6 +21,7 @@ export interface IIdea {
   extra?: Record<string, unknown>;
   notes?: string;
   done: boolean;
+  favorite: boolean;
   // Tracking de series (solo para kind 'watch' de tipo serie):
   progress?: { season: number; episode: number };
   ratings: IIdeaRating[];
@@ -40,6 +41,7 @@ const ideaSchema = new Schema<IIdea>(
     extra: { type: Schema.Types.Mixed },
     notes: { type: String },
     done: { type: Boolean, default: false },
+    favorite: { type: Boolean, default: false },
     progress: {
       type: new Schema(
         { season: { type: Number, default: 1 }, episode: { type: Number, default: 0 } },

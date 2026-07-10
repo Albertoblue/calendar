@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Button,
@@ -19,6 +19,8 @@ import {
   CalendarArrowRight16Regular,
   Checkmark16Regular,
   Open16Regular,
+  Heart16Filled,
+  Heart16Regular,
 } from '@fluentui/react-icons';
 import { Idea, IdeaInput, IdeaKind, SearchResult, SpaceMember } from '../../types';
 import {
@@ -29,6 +31,8 @@ import {
   rateIdea,
   searchMovies,
   searchPlaces,
+  topRatedWatch,
+  discoverPlaces,
 } from '../../api/ideas';
 import { StarRating } from '../memories/StarRating';
 
@@ -88,6 +92,10 @@ function resultToInput(r: SearchResult): IdeaInput {
   };
 }
 
+// Ubicacion por defecto: Centro Historico de la Ciudad de Mexico (Zocalo).
+// Si el navegador no da la ubicacion real, mostramos imprescindibles de aqui.
+const DEFAULT_COORDS = { lat: 19.4326, lng: -99.1332 };
+
 interface Props {
   kind: IdeaKind;
   members: SpaceMember[];
@@ -108,6 +116,46 @@ export function IdeaSection({ kind, members, currentUserId, onSchedule }: Props)
   const [configured, setConfigured] = useState(true);
 
   const ideasQuery = useQuery({ queryKey: ['ideas', kind], queryFn: () => fetchIdeas(kind) });
+  const topRatedQuery = useQuery({
+    queryKey: ['topRated'],
+    queryFn: topRatedWatch,
+    enabled: kind === 'watch',
+    retry: 1,
+  });
+
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'ok' | 'denied' | 'unavailable'>(
+    'idle'
+  );
+  const requestLocation = useCallback(() => {
+    if (!('geolocation' in navigator)) {
+      setGeoStatus('unavailable');
+      return;
+    }
+    setGeoStatus('loading');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGeoStatus('ok');
+      },
+      () => setGeoStatus('denied'),
+      { timeout: 8000 }
+    );
+  }, []);
+  useEffect(() => {
+    if (kind === 'place' && geoStatus === 'idle') requestLocation();
+  }, [kind, geoStatus, requestLocation]);
+  // Coordenadas efectivas: la ubicacion real del usuario si la dio, o el Centro
+  // de CDMX por defecto. Asi siempre hay recomendaciones (no se queda cargando).
+  const effectiveCoords = coords ?? DEFAULT_COORDS;
+  const usingDefaultLocation = coords == null;
+  const placesDiscoverQuery = useQuery({
+    queryKey: ['discoverPlaces', effectiveCoords.lat, effectiveCoords.lng],
+    queryFn: () => discoverPlaces(effectiveCoords.lat, effectiveCoords.lng),
+    enabled: kind === 'place',
+    retry: 1,
+  });
+
   const invalidate = () => qc.invalidateQueries({ queryKey: ['ideas', kind] });
 
   const createMut = useMutation({ mutationFn: createIdea, onSuccess: invalidate });
@@ -153,13 +201,52 @@ export function IdeaSection({ kind, members, currentUserId, onSchedule }: Props)
 
   const ideas = ideasQuery.data ?? [];
 
+  // Que mostrar en la zona de "resultados": la busqueda si se hizo, o las mejor
+  // valoradas de inicio (solo en pelis/series).
+  const showingSearch = searched;
+  const discoverData = kind === 'watch' ? topRatedQuery.data : placesDiscoverQuery.data;
+  const displayResults = showingSearch ? results : discoverData?.results ?? [];
+  const displayConfigured = showingSearch ? configured : discoverData?.configured ?? true;
+  const resultsLoading = showingSearch
+    ? searching
+    : kind === 'watch'
+      ? topRatedQuery.isLoading
+      : placesDiscoverQuery.isLoading;
+  const resultsTitle = showingSearch
+    ? 'Resultados'
+    : kind === 'watch'
+      ? 'Mejor valoradas'
+      : usingDefaultLocation
+        ? 'Imprescindibles en el Centro de CDMX'
+        : 'Imprescindibles cerca de ti';
+  // Pista opcional: mostramos CDMX por defecto y ofrecemos usar la ubicacion real.
+  const offerLocation =
+    !showingSearch &&
+    kind === 'place' &&
+    usingDefaultLocation &&
+    geoStatus !== 'loading' &&
+    displayConfigured;
+  const discoverError =
+    !showingSearch &&
+    (kind === 'watch'
+      ? topRatedQuery.isError
+      : kind === 'place'
+        ? placesDiscoverQuery.isError
+        : false);
+  const retryDiscover = () =>
+    kind === 'watch' ? topRatedQuery.refetch() : placesDiscoverQuery.refetch();
+  const loadingLabel = showingSearch ? 'Buscando...' : 'Cargando recomendaciones...';
+
   return (
     <div className={styles.root}>
       <form className={styles.searchRow} onSubmit={doSearch}>
         <div className={styles.grow}>
           <Input
             value={query}
-            onChange={(_, d) => setQuery(d.value)}
+            onChange={(_, d) => {
+              setQuery(d.value);
+              if (d.value.trim() === '') setSearched(false);
+            }}
             contentBefore={<Search20Regular />}
             placeholder={isPlace ? 'Buscar un lugar (restaurante, museo...)' : 'Buscar pelicula o serie'}
             style={{ width: '100%' }}
@@ -176,9 +263,9 @@ export function IdeaSection({ kind, members, currentUserId, onSchedule }: Props)
       </form>
 
       <div className={styles.scroll}>
-        {searching && <Spinner size="small" label="Buscando..." />}
+        {resultsLoading && <Spinner size="small" label={loadingLabel} />}
 
-        {searched && !searching && !configured && (
+        {!resultsLoading && !displayConfigured && (
           <MessageBar intent="info">
             <MessageBarBody>
               No hay API configurada para {isPlace ? 'lugares' : 'peliculas'}. Puedes anadir a mano
@@ -187,11 +274,35 @@ export function IdeaSection({ kind, members, currentUserId, onSchedule }: Props)
           </MessageBar>
         )}
 
-        {results.length > 0 && (
+        {offerLocation && (
+          <MessageBar intent="info">
+            <MessageBarBody>
+              Mostrando el Centro de CDMX. Activa tu ubicacion para ver los imprescindibles cerca de
+              vosotros, o busca una ciudad arriba.{' '}
+              <Button size="small" appearance="primary" onClick={requestLocation}>
+                Usar mi ubicacion
+              </Button>
+            </MessageBarBody>
+          </MessageBar>
+        )}
+
+        {discoverError && !resultsLoading && (
+          <MessageBar intent="error">
+            <MessageBarBody>
+              No se pudieron cargar las recomendaciones. Revisa la API key o la conexion e intenta de
+              nuevo.{' '}
+              <Button size="small" onClick={() => retryDiscover()}>
+                Reintentar
+              </Button>
+            </MessageBarBody>
+          </MessageBar>
+        )}
+
+        {displayResults.length > 0 && (
           <div>
-            <Caption1 className={styles.sectionTitle}>Resultados</Caption1>
+            <Caption1 className={styles.sectionTitle}>{resultsTitle}</Caption1>
             <div className={styles.grid}>
-              {results.map((r, i) => (
+              {displayResults.map((r, i) => (
                 <div key={`${r.externalId}-${i}`} className={styles.card}>
                   <div
                     className={styles.cover}
@@ -219,6 +330,14 @@ export function IdeaSection({ kind, members, currentUserId, onSchedule }: Props)
                     >
                       Anadir
                     </Button>
+                    <Tooltip content="Anadir a favoritos" relationship="label">
+                      <Button
+                        size="small"
+                        appearance="subtle"
+                        icon={<Heart16Regular />}
+                        onClick={() => createMut.mutate({ ...resultToInput(r), favorite: true })}
+                      />
+                    </Tooltip>
                   </div>
                 </div>
               ))}
@@ -286,6 +405,20 @@ export function IdeaSection({ kind, members, currentUserId, onSchedule }: Props)
                     )}
                   </div>
                   <div className={styles.actions}>
+                    <Tooltip
+                      content={idea.favorite ? 'Quitar de favoritos' : 'Marcar favorito'}
+                      relationship="label"
+                    >
+                      <Button
+                        size="small"
+                        appearance="subtle"
+                        style={idea.favorite ? { color: '#E3008C' } : undefined}
+                        icon={idea.favorite ? <Heart16Filled /> : <Heart16Regular />}
+                        onClick={() =>
+                          updateMut.mutate({ id: idea._id, data: { favorite: !idea.favorite } })
+                        }
+                      />
+                    </Tooltip>
                     <Tooltip content="Agendar en el calendario" relationship="label">
                       <Button
                         size="small"

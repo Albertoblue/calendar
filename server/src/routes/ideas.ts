@@ -9,6 +9,8 @@ import {
   rateIdea,
   searchMoviesCtrl,
   searchPlacesCtrl,
+  topRatedCtrl,
+  discoverPlacesCtrl,
 } from '../controllers/ideaController';
 
 const router = Router();
@@ -16,6 +18,8 @@ const router = Router();
 router.use(requireAuth);
 router.get('/search/movies', asyncHandler(searchMoviesCtrl));
 router.get('/search/places', asyncHandler(searchPlacesCtrl));
+router.get('/discover/movies', asyncHandler(topRatedCtrl));
+router.get('/discover/places', asyncHandler(discoverPlacesCtrl));
 router.get('/', asyncHandler(listIdeas));
 router.post('/', asyncHandler(createIdea));
 router.post('/:id/rate', asyncHandler(rateIdea));

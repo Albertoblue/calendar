@@ -6,6 +6,10 @@ dist/
 build/
 *.tsbuildinfo
 
+# Artefactos de tsc -b sobre vite.config.ts
+client/vite.config.js
+client/vite.config.d.ts
+
 # Variables de entorno (¡nunca subir credenciales de Atlas!)
 .env
 .env.local

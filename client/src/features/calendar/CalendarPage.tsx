@@ -39,6 +39,7 @@ import {
   deleteCountdown,
 } from '../../api/countdowns';
 import { monthRange } from '../../lib/dateRange';
+import { updateCategory } from '../../api/categories';
 import { useIsMobile } from '../../lib/useIsMobile';
 import { sortByProximity } from '../../lib/countdown';
 import {
@@ -307,6 +308,12 @@ export function CalendarPage() {
   const deleteCountdownMut = useMutation({
     mutationFn: deleteCountdown,
     onSuccess: invalidateCountdowns,
+  });
+
+  // --- Categorias ---
+  const updateCategoryMut = useMutation({
+    mutationFn: (v: { id: string; color: string }) => updateCategory(v.id, { color: v.color }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['space'] }),
   });
 
   if (spaceQuery.isLoading) {
@@ -580,6 +587,8 @@ export function CalendarPage() {
     activeCategories,
     onToggleMember: (id: string) => toggle(setActiveMembers, id),
     onToggleCategory: (id: string) => toggle(setActiveCategories, id),
+    onChangeCategoryColor: (id: string, color: string) =>
+      updateCategoryMut.mutate({ id, color }),
     nextCountdown,
     onOpenCountdowns: () => setShowCountdowns(true),
   };

@@ -4,6 +4,9 @@ import {
   Text,
   Button,
   Caption1,
+  Popover,
+  PopoverTrigger,
+  PopoverSurface,
   makeStyles,
   tokens,
 } from '@fluentui/react-components';
@@ -11,6 +14,20 @@ import { Copy16Regular, Checkmark16Regular } from '@fluentui/react-icons';
 import { MiniCalendar } from './MiniCalendar';
 import { SpaceMember, Category, Countdown } from '../../types';
 import { daysUntil, countdownLabel } from '../../lib/countdown';
+
+// Paleta de colores bien diferenciados para elegir el color de una categoria.
+const PALETTE = [
+  '#D13438',
+  '#F7630C',
+  '#EAA300',
+  '#107C10',
+  '#038387',
+  '#0F6CBD',
+  '#8764B8',
+  '#E3008C',
+  '#5C6773',
+  '#8E562E',
+];
 
 const useStyles = makeStyles({
   root: {
@@ -33,7 +50,34 @@ const useStyles = makeStyles({
     marginBottom: '2px',
   },
   item: { display: 'flex', alignItems: 'center', gap: '6px' },
+  grow: { flexGrow: 1 },
   dot: { width: '12px', height: '12px', borderRadius: '3px', flexShrink: 0 },
+  swatchBtn: {
+    width: '18px',
+    height: '18px',
+    borderRadius: '5px',
+    flexShrink: 0,
+    cursor: 'pointer',
+    padding: 0,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+  },
+  palette: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(5, 1fr)',
+    gap: '8px',
+  },
+  paletteSwatch: {
+    width: '28px',
+    height: '28px',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    padding: 0,
+    border: `2px solid ${tokens.colorNeutralStroke2}`,
+    transitionProperty: 'transform',
+    transitionDuration: '0.1s',
+    transitionTimingFunction: 'ease',
+    ':hover': { transform: 'scale(1.15)' },
+  },
   invite: {
     backgroundColor: tokens.colorNeutralBackground3,
     borderRadius: '8px',
@@ -78,6 +122,7 @@ interface Props {
   activeCategories: Set<string>;
   onToggleMember: (id: string) => void;
   onToggleCategory: (id: string) => void;
+  onChangeCategoryColor: (id: string, color: string) => void;
   nextCountdown: Countdown | null;
   onOpenCountdowns: () => void;
 }
@@ -94,11 +139,13 @@ export function Sidebar({
   activeCategories,
   onToggleMember,
   onToggleCategory,
+  onChangeCategoryColor,
   nextCountdown,
   onOpenCountdowns,
 }: Props) {
   const styles = useStyles();
   const [copied, setCopied] = useState(false);
+  const [colorPickerFor, setColorPickerFor] = useState<string | null>(null);
 
   const copyCode = async () => {
     try {
@@ -157,14 +204,42 @@ export function Sidebar({
               checked={activeCategories.has(c._id)}
               onChange={() => onToggleCategory(c._id)}
               label={
-                <span className={styles.item}>
-                  <span className={styles.dot} style={{ backgroundColor: c.color }} />
-                  <Text>
-                    {c.icon} {c.name}
-                  </Text>
-                </span>
+                <Text>
+                  {c.icon} {c.name}
+                </Text>
               }
             />
+            <span className={styles.grow} />
+            <Popover
+              open={colorPickerFor === c._id}
+              onOpenChange={(_, d) => setColorPickerFor(d.open ? c._id : null)}
+              positioning="below-end"
+            >
+              <PopoverTrigger disableButtonEnhancement>
+                <button
+                  className={styles.swatchBtn}
+                  style={{ backgroundColor: c.color }}
+                  title="Cambiar color"
+                  aria-label={`Cambiar color de ${c.name}`}
+                />
+              </PopoverTrigger>
+              <PopoverSurface>
+                <div className={styles.palette}>
+                  {PALETTE.map((color) => (
+                    <button
+                      key={color}
+                      className={styles.paletteSwatch}
+                      style={{ backgroundColor: color }}
+                      aria-label={`Color ${color}`}
+                      onClick={() => {
+                        onChangeCategoryColor(c._id, color);
+                        setColorPickerFor(null);
+                      }}
+                    />
+                  ))}
+                </div>
+              </PopoverSurface>
+            </Popover>
           </div>
         ))}
       </div>

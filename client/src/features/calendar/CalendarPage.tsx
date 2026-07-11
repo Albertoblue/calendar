@@ -636,7 +636,7 @@ export function CalendarPage() {
       />
 
       <div className={styles.body}>
-        {!isMobile && <Sidebar {...sidebarProps} onDateChange={setCurrentDate} />}
+        {!isMobile && sidebarOpen && <Sidebar {...sidebarProps} onDateChange={setCurrentDate} />}
 
         <main className={styles.canvas}>
           <CalendarCanvas

@@ -76,7 +76,7 @@ const useStyles = makeStyles({
   spacer: { flexGrow: 1 },
   iconBtn: { color: '#fff', minWidth: '32px' },
   hideMobile: { '@media (max-width: 768px)': { display: 'none' } },
-  menuBtn: { color: '#fff', minWidth: '32px', display: 'none', '@media (max-width: 768px)': { display: 'inline-flex' } },
+  menuBtn: { color: '#fff', minWidth: '32px' },
   commandbar: {
     height: '48px',
     backgroundColor: tokens.colorNeutralBackground1,
@@ -187,7 +187,8 @@ export function TopBar({
           className={styles.menuBtn}
           icon={<Navigation20Regular />}
           onClick={onToggleSidebar}
-          aria-label="Abrir menu lateral"
+          aria-label="Mostrar u ocultar el panel lateral"
+          title="Mostrar u ocultar el panel"
         />
         <div className={styles.brand}>
           <CalendarLtr20Regular />

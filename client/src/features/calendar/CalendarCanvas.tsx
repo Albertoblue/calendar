@@ -58,6 +58,8 @@ interface Props {
   activities: Activity[];
   date: Date;
   view: View;
+  /** Si esta activo, atenua los dias entre semana para destacar sabado y domingo. */
+  weekendsOnly?: boolean;
   onView: (view: View) => void;
   onNavigate: (date: Date) => void;
   onSelectActivity: (activity: Activity) => void;
@@ -72,6 +74,7 @@ export function CalendarCanvas({
   activities,
   date,
   view,
+  weekendsOnly,
   onView,
   onNavigate,
   onSelectActivity,
@@ -135,6 +138,15 @@ export function CalendarCanvas({
         onDropWish(new Date(start), new Date(end), allDay)
       }
       onDragOver={(e) => e.preventDefault()}
+      dayPropGetter={(cellDate) => {
+        if (weekendsOnly) {
+          const day = cellDate.getDay();
+          if (day !== 0 && day !== 6) {
+            return { style: { backgroundColor: 'rgba(0,0,0,0.05)', opacity: 0.6 } };
+          }
+        }
+        return {};
+      }}
       eventPropGetter={(event) => {
         const color = event.resource.color || '#0F6CBD';
         return {

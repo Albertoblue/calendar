@@ -145,6 +145,7 @@ export function CalendarPage() {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [weekendsOnly, setWeekendsOnly] = useState(false);
   const [view, setView] = useState<View>(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches ? 'day' : 'week'
   );
@@ -331,8 +332,15 @@ export function CalendarPage() {
   const { space, categories } = spaceQuery.data;
   const members = space.members;
 
+  const isWeekend = (d: string) => {
+    const day = new Date(d).getDay();
+    return day === 0 || day === 6; // 0 = domingo, 6 = sabado
+  };
   const activities = (activitiesQuery.data ?? []).filter(
-    (a) => activeMembers.has(a.createdBy) && (!a.categoryId || activeCategories.has(a.categoryId))
+    (a) =>
+      activeMembers.has(a.createdBy) &&
+      (!a.categoryId || activeCategories.has(a.categoryId)) &&
+      (!weekendsOnly || isWeekend(a.start))
   );
 
   const toggle = (setter: Dispatch<SetStateAction<Set<string>>>, id: string) =>
@@ -589,6 +597,8 @@ export function CalendarPage() {
     onToggleCategory: (id: string) => toggle(setActiveCategories, id),
     onChangeCategoryColor: (id: string, color: string) =>
       updateCategoryMut.mutate({ id, color }),
+    weekendsOnly,
+    onToggleWeekendsOnly: setWeekendsOnly,
     nextCountdown,
     onOpenCountdowns: () => setShowCountdowns(true),
   };
@@ -643,6 +653,7 @@ export function CalendarPage() {
             activities={activities}
             date={currentDate}
             view={view}
+            weekendsOnly={weekendsOnly}
             onView={setView}
             onNavigate={setCurrentDate}
             onSelectActivity={setDetail}

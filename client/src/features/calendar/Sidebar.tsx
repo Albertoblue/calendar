@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   Checkbox,
+  Switch,
   Text,
   Button,
   Caption1,
@@ -123,6 +124,8 @@ interface Props {
   onToggleMember: (id: string) => void;
   onToggleCategory: (id: string) => void;
   onChangeCategoryColor: (id: string, color: string) => void;
+  weekendsOnly: boolean;
+  onToggleWeekendsOnly: (value: boolean) => void;
   nextCountdown: Countdown | null;
   onOpenCountdowns: () => void;
 }
@@ -140,6 +143,8 @@ export function Sidebar({
   onToggleMember,
   onToggleCategory,
   onChangeCategoryColor,
+  weekendsOnly,
+  onToggleWeekendsOnly,
   nextCountdown,
   onOpenCountdowns,
 }: Props) {
@@ -160,6 +165,15 @@ export function Sidebar({
   return (
     <aside className={styles.root}>
       <MiniCalendar value={currentDate} onChange={onDateChange} />
+
+      <div className={styles.section}>
+        <Caption1 className={styles.sectionTitle}>Vista</Caption1>
+        <Switch
+          checked={weekendsOnly}
+          onChange={(_, d) => onToggleWeekendsOnly(Boolean(d.checked))}
+          label="Solo fines de semana"
+        />
+      </div>
 
       {nextCountdown && (
         <button

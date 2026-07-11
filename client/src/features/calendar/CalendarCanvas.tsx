@@ -6,11 +6,15 @@ import {
   SlotInfo,
   Messages,
   CalendarProps,
+  Navigate,
 } from 'react-big-calendar';
 import withDragAndDrop, {
   EventInteractionArgs,
 } from 'react-big-calendar/lib/addons/dragAndDrop';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
+// @ts-ignore -- TimeGrid interno de react-big-calendar no expone tipos; se usa
+// para armar una vista personalizada que solo muestra sabado y domingo.
+import TimeGrid from 'react-big-calendar/lib/TimeGrid';
+import { format, parse, startOfWeek, getDay, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Activity } from '../../types';
 
@@ -25,6 +29,27 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
+
+// Vista personalizada: renderiza solo las columnas de domingo y sabado.
+// Al pasar un `range` con esas dos fechas, react-big-calendar omite el resto.
+function weekendRange(date: Date): Date[] {
+  const start = startOfWeek(date, { weekStartsOn: 0 }); // domingo
+  return [start, addDays(start, 6)]; // [domingo, sabado]
+}
+
+const WeekendView: any = (props: any) => (
+  <TimeGrid {...props} range={weekendRange(props.date)} eventOffset={15} />
+);
+WeekendView.range = weekendRange;
+WeekendView.navigate = (date: Date, action: any): Date => {
+  if (action === Navigate.PREVIOUS) return addDays(date, -7);
+  if (action === Navigate.NEXT) return addDays(date, 7);
+  return date;
+};
+WeekendView.title = (date: Date): string => {
+  const [start, end] = weekendRange(date);
+  return `${format(start, 'd MMM', { locale: es })} - ${format(end, 'd MMM yyyy', { locale: es })}`;
+};
 
 const messages: Messages = {
   today: 'Hoy',
@@ -58,7 +83,7 @@ interface Props {
   activities: Activity[];
   date: Date;
   view: View;
-  /** Si esta activo, atenua los dias entre semana para destacar sabado y domingo. */
+  /** Si esta activo, usa la vista de fin de semana (solo domingo y sabado). */
   weekendsOnly?: boolean;
   onView: (view: View) => void;
   onNavigate: (date: Date) => void;
@@ -108,11 +133,11 @@ export function CalendarCanvas({
       localizer={localizer}
       culture="es"
       events={events}
-      view={view}
+      view={weekendsOnly ? 'work_week' : view}
       date={date}
       onView={onView}
       onNavigate={onNavigate}
-      views={['month', 'week', 'day', 'agenda']}
+      views={{ month: true, week: true, day: true, agenda: true, work_week: WeekendView }}
       toolbar={false}
       selectable
       popup
@@ -138,15 +163,6 @@ export function CalendarCanvas({
         onDropWish(new Date(start), new Date(end), allDay)
       }
       onDragOver={(e) => e.preventDefault()}
-      dayPropGetter={(cellDate) => {
-        if (weekendsOnly) {
-          const day = cellDate.getDay();
-          if (day !== 0 && day !== 6) {
-            return { style: { backgroundColor: 'rgba(0,0,0,0.05)', opacity: 0.6 } };
-          }
-        }
-        return {};
-      }}
       eventPropGetter={(event) => {
         const color = event.resource.color || '#0F6CBD';
         return {

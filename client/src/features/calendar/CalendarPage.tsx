@@ -633,7 +633,10 @@ export function CalendarPage() {
         onToday={() => setCurrentDate(new Date())}
         onPrev={() => setCurrentDate((d) => shift(d, view, -1))}
         onNext={() => setCurrentDate((d) => shift(d, view, 1))}
-        onViewChange={setView}
+        onViewChange={(v) => {
+          setView(v);
+          setWeekendsOnly(false);
+        }}
         onToggleWishlist={() => setShowWishlist((v) => !v)}
         onOpenMemories={() => setShowMemories(true)}
         onOpenIdeas={() => setShowIdeas(true)}
@@ -654,7 +657,10 @@ export function CalendarPage() {
             date={currentDate}
             view={view}
             weekendsOnly={weekendsOnly}
-            onView={setView}
+            onView={(v) => {
+              setView(v);
+              setWeekendsOnly(false);
+            }}
             onNavigate={setCurrentDate}
             onSelectActivity={setDetail}
             onSelectSlot={(start, end) => {

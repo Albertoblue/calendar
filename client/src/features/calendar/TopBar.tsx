@@ -96,6 +96,15 @@ const useStyles = makeStyles({
     whiteSpace: 'nowrap',
     '@media (max-width: 768px)': { fontSize: '13px', marginLeft: '2px' },
   },
+  viewGroup: {
+    display: 'flex',
+    gap: '2px',
+    marginLeft: '8px',
+    padding: '2px',
+    borderRadius: '6px',
+    backgroundColor: tokens.colorNeutralBackground3,
+    flexShrink: 0,
+  },
 });
 
 const VIEW_LABELS: Record<string, string> = {
@@ -170,13 +179,29 @@ export function TopBar({
       </MenuTrigger>
       <MenuPopover>
         <MenuList>
-          <MenuItem onClick={() => onViewChange('day')}>Dia</MenuItem>
-          <MenuItem onClick={() => onViewChange('week')}>Semana</MenuItem>
           <MenuItem onClick={() => onViewChange('month')}>Mes</MenuItem>
+          <MenuItem onClick={() => onViewChange('week')}>Semana</MenuItem>
+          <MenuItem onClick={() => onViewChange('day')}>Dia</MenuItem>
           <MenuItem onClick={() => onViewChange('agenda')}>Agenda</MenuItem>
         </MenuList>
       </MenuPopover>
     </Menu>
+  );
+
+  // Selector de vista segmentado (escritorio): Mes / Semana / Dia / Agenda a la vista.
+  const viewButtons = (
+    <div className={styles.viewGroup}>
+      {(['month', 'week', 'day', 'agenda'] as View[]).map((v) => (
+        <Button
+          key={v}
+          size="small"
+          appearance={view === v ? 'primary' : 'subtle'}
+          onClick={() => onViewChange(v)}
+        >
+          {VIEW_LABELS[v]}
+        </Button>
+      ))}
+    </div>
   );
 
   return (
@@ -231,6 +256,8 @@ export function TopBar({
           <Button appearance="subtle" icon={<ChevronRight20Regular />} onClick={onNext} />
         </Tooltip>
         <span className={styles.dateLabel}>{dateLabel(date, view)}</span>
+
+        {!isMobile && viewButtons}
 
         <div className={styles.spacer} />
 
@@ -308,8 +335,6 @@ export function TopBar({
             <Button appearance="subtle" icon={<Gift20Regular />} onClick={onOpenGifts}>
               Regalos
             </Button>
-
-            {viewMenu}
 
             <Tooltip content="Cerrar sesion" relationship="label">
               <Button appearance="subtle" icon={<SignOut20Regular />} onClick={onLogout} />

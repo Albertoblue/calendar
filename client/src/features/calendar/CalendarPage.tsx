@@ -657,7 +657,19 @@ export function CalendarPage() {
             onView={setView}
             onNavigate={setCurrentDate}
             onSelectActivity={setDetail}
-            onSelectSlot={(start, end) => openNewActivity({ start, end })}
+            onSelectSlot={(start, end) => {
+              // En vista mes el slot es un dia completo; le damos una hora por defecto.
+              const durationH = (end.getTime() - start.getTime()) / 3_600_000;
+              if (durationH >= 23) {
+                const s = new Date(start);
+                s.setHours(12, 0, 0, 0);
+                const e = new Date(start);
+                e.setHours(13, 0, 0, 0);
+                openNewActivity({ start: s, end: e });
+              } else {
+                openNewActivity({ start, end });
+              }
+            }}
             onDropWish={handleDropWish}
             onMoveActivity={handleMoveActivity}
           />
